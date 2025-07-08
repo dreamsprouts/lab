@@ -73,15 +73,17 @@ export const MarkdownEditor: React.FC = () => {
   }
 
   return (
-    <div className="h-screen flex flex-col">
-      {/* 工具列 */}
-      <Toolbar
-        onInsertText={insertTextAtCursor}
-        onLoadFile={handleLoadFile}
-        onSaveFile={handleSaveFile}
-        onTogglePreview={handleTogglePreview}
-        showPreview={showPreview}
-      />
+    <div className="h-screen flex flex-col bg-gray-50">
+      {/* 工具列 - 置頂固定 */}
+      <div className="sticky top-0 z-10 bg-white shadow-sm">
+        <Toolbar
+          onInsertText={insertTextAtCursor}
+          onLoadFile={handleLoadFile}
+          onSaveFile={handleSaveFile}
+          onTogglePreview={handleTogglePreview}
+          showPreview={showPreview}
+        />
+      </div>
 
       {/* 隱藏的檔案輸入 */}
       <input
@@ -93,10 +95,10 @@ export const MarkdownEditor: React.FC = () => {
       />
 
       {/* 編輯器主體 */}
-      <div className="flex-1 flex">
+      <div className="flex-1 flex min-h-0">
         {/* 編輯區域 */}
-        <div className={`${showPreview ? 'w-1/2' : 'w-full'} flex flex-col`}>
-          <div className="bg-gray-100 px-4 py-2 text-sm font-medium text-gray-700 border-b">
+        <div className={`${showPreview ? 'w-1/2' : 'w-full'} flex flex-col min-h-0`}>
+          <div className="bg-gray-100 px-4 py-2 text-sm font-medium text-gray-700 border-b border-gray-200 flex-shrink-0">
             編輯器
           </div>
           <textarea
@@ -104,7 +106,7 @@ export const MarkdownEditor: React.FC = () => {
             value={markdown}
             onChange={handleTextareaChange}
             onKeyDown={handleKeyDown}
-            className="flex-1 p-4 font-mono text-sm border-none outline-none resize-none bg-white"
+            className="flex-1 p-4 font-mono text-sm border-none outline-none resize-none bg-white overflow-auto"
             placeholder="在這裡輸入 Markdown 內容..."
             spellCheck={false}
           />
@@ -112,36 +114,71 @@ export const MarkdownEditor: React.FC = () => {
 
         {/* 預覽區域 */}
         {showPreview && (
-          <div className="w-1/2 flex flex-col border-l border-gray-200">
-            <div className="bg-gray-100 px-4 py-2 text-sm font-medium text-gray-700 border-b">
+          <div className="w-1/2 flex flex-col border-l border-gray-200 min-h-0 bg-white">
+            <div className="bg-gray-100 px-4 py-2 text-sm font-medium text-gray-700 border-b border-gray-200 flex-shrink-0">
               預覽
             </div>
-            <div className="flex-1 overflow-auto p-4 bg-white">
-              <div className="markdown-content">
-                <ReactMarkdown
-                  remarkPlugins={[remarkGfm]}
-                  components={{
-                    code({ inline, className, children, ...props }) {
-                      const match = /language-(\w+)/.exec(className || '')
-                      return !inline && match ? (
-                        <SyntaxHighlighter
-                          style={tomorrow}
-                          language={match[1]}
-                          PreTag="div"
-                          {...props}
-                        >
-                          {String(children).replace(/\n$/, '')}
-                        </SyntaxHighlighter>
-                      ) : (
-                        <code className={className} {...props}>
-                          {children}
-                        </code>
-                      )
-                    }
-                  }}
-                >
-                  {markdown}
-                </ReactMarkdown>
+            <div className="flex-1 overflow-auto">
+              <div className="p-4 min-h-full">
+                <div className="markdown-content max-w-none prose prose-sm sm:prose lg:prose-lg xl:prose-xl">
+                  <ReactMarkdown
+                    remarkPlugins={[remarkGfm]}
+                    components={{
+                      code({ node, inline, className, children, ...props }: any) {
+                        const match = /language-(\w+)/.exec(className || '')
+                        return !inline && match ? (
+                          <SyntaxHighlighter
+                            style={tomorrow}
+                            language={match[1]}
+                            PreTag="div"
+                            wrapLines={true}
+                            {...props}
+                          >
+                            {String(children).replace(/\n$/, '')}
+                          </SyntaxHighlighter>
+                        ) : (
+                          <code className={`${className} bg-gray-100 px-1 py-0.5 rounded text-sm`} {...props}>
+                            {children}
+                          </code>
+                        )
+                      },
+                      // 優化表格顯示
+                      table({ children, ...props }) {
+                        return (
+                          <div className="overflow-x-auto">
+                            <table className="min-w-full border-collapse border border-gray-300" {...props}>
+                              {children}
+                            </table>
+                          </div>
+                        )
+                      },
+                      // 優化長文字處理
+                      p({ children, ...props }) {
+                        return (
+                          <p className="break-words" {...props}>
+                            {children}
+                          </p>
+                        )
+                      },
+                      // 優化連結處理
+                      a({ children, href, ...props }) {
+                        return (
+                          <a 
+                            href={href} 
+                            className="text-blue-600 hover:text-blue-800 underline break-all" 
+                            target="_blank" 
+                            rel="noopener noreferrer"
+                            {...props}
+                          >
+                            {children}
+                          </a>
+                        )
+                      }
+                    }}
+                  >
+                    {markdown}
+                  </ReactMarkdown>
+                </div>
               </div>
             </div>
           </div>
